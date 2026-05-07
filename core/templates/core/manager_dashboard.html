@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Manager Dashboard — TaskPortal{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1"><i class="bi bi-briefcase-fill text-accent me-2"></i>Manager Dashboard</h1>
+            <p class="text-muted mb-0">Manage tasks and monitor employee performance</p>
+        </div>
+        <a href="{% url 'task_create' %}" class="btn btn-accent"><i class="bi bi-plus-circle me-1"></i> New Task</a>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card glass-card border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-list-task display-5 text-primary"></i>
+                    <h2 class="fw-bold mt-2 mb-0">{{ total }}</h2>
+                    <p class="text-muted mb-0">Total Tasks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card glass-card border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-hourglass-split display-5 text-warning"></i>
+                    <h2 class="fw-bold mt-2 mb-0">{{ pending }}</h2>
+                    <p class="text-muted mb-0">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card glass-card border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-arrow-repeat display-5 text-info"></i>
+                    <h2 class="fw-bold mt-2 mb-0">{{ in_progress }}</h2>
+                    <p class="text-muted mb-0">In Progress</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card glass-card border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle-fill display-5 text-success"></i>
+                    <h2 class="fw-bold mt-2 mb-0">{{ completed }}</h2>
+                    <p class="text-muted mb-0">Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Tasks -->
+        <div class="col-lg-7">
+            <div class="card glass-card border-0">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-semibold mb-0"><i class="bi bi-clock-history me-2"></i>Recent Tasks</h5>
+                    <a href="{% url 'task_list' %}" class="btn btn-sm btn-outline-light">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Assigned To</th>
+                                    <th>Status</th>
+                                    <th>Deadline</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in recent_tasks %}
+                                <tr>
+                                    <td><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-accent">{{ task.title|truncatechars:30 }}</a></td>
+                                    <td>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</td>
+                                    <td><span class="badge bg-{{ task.status|cut:' ' }}-status">{{ task.get_status_display }}</span></td>
+                                    <td class="{% if task.is_overdue %}text-danger{% endif %}">
+                                        {{ task.deadline|date:"M d, Y H:i" }}
+                                        {% if task.is_overdue %}<i class="bi bi-exclamation-triangle-fill ms-1"></i>{% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-3">No tasks created yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Performance -->
+        <div class="col-lg-5">
+            <div class="card glass-card border-0">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="fw-semibold mb-0"><i class="bi bi-people me-2"></i>Employee Performance</h5>
+                </div>
+                <div class="card-body">
+                    {% for stat in employee_stats %}
+                    <div class="mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-circle small">{{ stat.employee.first_name|default:stat.employee.username|truncatechars:1 }}</span>
+                                <strong>{{ stat.employee.get_full_name|default:stat.employee.username }}</strong>
+                            </div>
+                            <span class="text-muted small">{{ stat.total }} tasks</span>
+                        </div>
+                        {% if stat.total > 0 %}
+                        <div class="progress" style="height: 8px;">
+                            {% widthratio stat.completed stat.total 100 as comp_pct %}
+                            {% widthratio stat.in_progress stat.total 100 as prog_pct %}
+                            {% widthratio stat.pending stat.total 100 as pend_pct %}
+                            <div class="progress-bar bg-success" style="width: {{ comp_pct }}%" title="Completed: {{ stat.completed }}"></div>
+                            <div class="progress-bar bg-info" style="width: {{ prog_pct }}%" title="In Progress: {{ stat.in_progress }}"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ pend_pct }}%" title="Pending: {{ stat.pending }}"></div>
+                        </div>
+                        <div class="d-flex gap-3 mt-1">
+                            <small class="text-success"><i class="bi bi-circle-fill"></i> {{ stat.completed }}</small>
+                            <small class="text-info"><i class="bi bi-circle-fill"></i> {{ stat.in_progress }}</small>
+                            <small class="text-warning"><i class="bi bi-circle-fill"></i> {{ stat.pending }}</small>
+                        </div>
+                        {% else %}
+                        <small class="text-muted">No tasks assigned</small>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center mb-0">No employees found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

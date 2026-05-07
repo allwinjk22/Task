@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — TaskPortal{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <div class="mb-4">
+        <h1 class="fw-bold mb-1"><i class="bi bi-person-gear text-accent me-2"></i>{{ title }}</h1>
+        <p class="text-muted mb-0">Fill in the user details below</p>
+    </div>
+
+    <div class="card glass-card border-0" style="max-width: 600px;">
+        <div class="card-body p-4">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="alert alert-danger py-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Please correct the errors below.
+                    <ul class="mb-0 mt-1 small">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                            <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+                    {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+                </div>
+                {% endfor %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-accent px-4"><i class="bi bi-check-lg me-1"></i> Save</button>
+                    <a href="{% url 'admin_user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Tasks — TaskPortal{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="fw-bold mb-1"><i class="bi bi-list-task text-accent me-2"></i>Tasks</h1>
+            <p class="text-muted mb-0">Browse, search, and filter tasks</p>
+        </div>
+        {% if user.role == 'manager' %}
+        <a href="{% url 'task_create' %}" class="btn btn-accent"><i class="bi bi-plus-circle me-1"></i> New Task</a>
+        {% endif %}
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="card glass-card border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search tasks..." value="{{ query }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Priority</label>
+                    <select name="priority" class="form-select">
+                        <option value="">All Priorities</option>
+                        <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+                        <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-accent w-100"><i class="bi bi-funnel me-1"></i> Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Table -->
+    <div class="card glass-card border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Title</th>
+                            <th>Assigned To</th>
+                            <th>Assigned By</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Deadline</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-table-body">
+                        {% for task in page_obj %}
+                        <tr data-task-id="{{ task.pk }}">
+                            <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-accent fw-semibold">{{ task.title|truncatechars:35 }}</a></td>
+                            <td>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</td>
+                            <td>{{ task.assigned_by.get_full_name|default:task.assigned_by.username }}</td>
+                            <td><span class="badge bg-{{ task.status|cut:' ' }}-status">{{ task.get_status_display }}</span></td>
+                            <td><span class="badge bg-{{ task.priority }}-priority">{{ task.get_priority_display }}</span></td>
+                            <td class="{% if task.is_overdue %}text-danger{% endif %}">
+                                {{ task.deadline|date:"M d, Y H:i" }}
+                                {% if task.is_overdue %}<i class="bi bi-exclamation-triangle-fill ms-1"></i>{% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-light me-1" title="View"><i class="bi bi-eye"></i></a>
+                                {% if user.role == 'manager' and task.assigned_by == user %}
+                                <a href="{% url 'task_edit' task.pk %}" class="btn btn-sm btn-outline-info me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+                                <a href="{% url 'task_delete' task.pk %}" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">No tasks found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4 d-flex justify-content-center">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}&priority={{ priority_filter }}">&laquo;</a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}&q={{ query }}&status={{ status_filter }}&priority={{ priority_filter }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}&priority={{ priority_filter }}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
